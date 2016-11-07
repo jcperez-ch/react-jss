@@ -2,6 +2,7 @@ import React, {Component} from 'react'
 import {create as createJss} from 'jss'
 import preset from 'jss-preset-default'
 import hoistNonReactStatics from 'hoist-non-react-statics'
+import shallowEqual from 'shallowequal'
 
 /**
  * Wrap a Component into a JSS Container Component.
@@ -23,17 +24,32 @@ function wrap(jss, WrappedComponent, styles, options = {}) {
 
   if (!options.meta) options.meta = displayName
 
-  function attach() {
-    if (!sheet) sheet = jss.createStyleSheet(styles, options)
+  function attach(props) {
+    if (!sheet) {
+      sheet = jss.createStyleSheet(typeof styles === 'function' ? styles(props) : styles, options)
+    }
     sheet.attach()
+  }
+
+  function rettachIfChanged(props) {
+    const dynamicSheet = jss.createStyleSheet(typeof styles === 'function' ? styles(props) : styles, options)
+    if (!shallowEqual(sheet, dynamicSheet)) {
+      if (sheet !== null) {
+        sheet.detach()
+      }
+      sheet = dynamicSheet.attach()
+      return true
+    }
+    jss.removeStyleSheet(dynamicSheet)
+    return false
   }
 
   function detach() {
     sheet.detach()
   }
 
-  function ref() {
-    if (refs === 0) attach()
+  function ref(props) {
+    if (refs === 0) attach(props)
     refs++
     return sheet
   }
@@ -48,15 +64,23 @@ function wrap(jss, WrappedComponent, styles, options = {}) {
     static displayName = `Jss(${displayName})`
 
     componentWillMount() {
-      this.sheet = ref()
+      this.sheet = ref(this.props)
     }
 
-    componentWillUpdate() {
+    componentWillUpdate(nextProps) {
+      if (sheet !== null) {
+        const sheetChanged = rettachIfChanged(nextProps)
+        if (sheetChanged) {
+          this.sheet = sheet
+        }
+      }
+
       if (process.env.NODE_ENV !== 'production') {
         // Support React Hot Loader.
+
         if (this.sheet !== sheet) {
           this.sheet.detach()
-          this.sheet = ref()
+          this.sheet = ref(this.props)
         }
       }
     }

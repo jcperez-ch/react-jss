@@ -73,6 +73,46 @@ describe('react-jss', () => {
     })
   })
 
+  describe('.injectSheet() with parent props composition', () => {
+    let WrappedComponent
+
+    beforeEach(() => {
+      const Component = () => null
+      WrappedComponent = injectSheet((parentProps = {buttonColor: 'red'}) => ({
+        button: {color: parentProps.buttonColor}
+      }))(Component)
+    })
+    it('should accept composed styles via parentProps', () => {
+      render(<WrappedComponent />, node)
+      expect(document.querySelectorAll('style').length).to.be(1)
+    })
+
+    it('should apply different styles based on parentProps', () => {
+      class Parent extends React.Component {
+        constructor(props, context) {
+          super(props, context)
+          this.state = {buttonColor: 'red'}
+        }
+        render() {
+          this.child = <WrappedComponent {...this.state} />
+          return this.child
+        }
+      }
+      const container = render(<Parent />, node)
+      expect(document.querySelectorAll('style')[0].innerHTML).to.contain('color: red')
+      const sheet = document.querySelectorAll('style')[0]
+      container.setState({buttonBorder: '1px solid black'})
+      expect(document.querySelectorAll('style')[0]).to.eql(sheet)
+      expect(document.querySelectorAll('style')[0].innerHTML).to.contain('color: red')
+      container.setState({buttonColor: 'blue'})
+      expect(document.querySelectorAll('style').length).to.be(1)
+      expect(document.querySelectorAll('style')[0]).to.not.be(sheet)
+      expect(document.querySelectorAll('style')[0].innerHTML).to.contain('color: blue')
+      container.setState({buttonColor: 'green'})
+      expect(document.querySelectorAll('style')[0].innerHTML).to.contain('color: green')
+    })
+  })
+
   describe('.injectSheet() without a component for global styles', () => {
     let Container
 
@@ -90,7 +130,7 @@ describe('react-jss', () => {
     })
 
     it('should render children', () => {
-      let isRendered = true
+      let isRendered = false
       const Component = () => {
         isRendered = true
         return null
@@ -153,7 +193,7 @@ describe('react-jss', () => {
     })
 
     it('should properly detach sheets on hot reloaded component', () => {
-      // eslint-disable-next-line react/prefer-stateless-function
+      // eslint-disable-next-line
       class AppContainer extends React.Component {
         render() {
           return (
