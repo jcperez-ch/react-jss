@@ -99,6 +99,61 @@ export default class Button extends Component {
 }
 ```
 
+### Using composition for skinning
+
+As well as injecting styles directly, `react-jss` allows you to inject dynamic style sheets based on your component's props.  So you can generate and attach a new generated sheet every time the parent component passes different props.
+
+```javascript
+import React, {Component} from 'react'
+import injectSheet from 'react-jss'
+
+@injectSheet(parentProps => {
+  const {
+    buttonBackgroundColor = 'yellow',
+    labelWeight = 'normal'
+  } = parentProps;
+
+  return {
+    button: {
+      backgroundColor: buttonBackgroundColor
+    },
+    label: {
+      fontWeight: labelWeight
+    }
+  }
+})
+export default class Button extends Component {
+  render() {
+    const {sheet: {classes}, children} = this.props
+    return (
+      <button className={classes.button}>
+        <span className={classes.label}>
+          {children}
+        </span>
+      </button>
+    )
+  }
+}
+```
+
+This component now reacts to its ownProps, passed by a parent component like:
+
+```javascript
+// Parent component
+export default (skin) => {
+    const buttonProps = {
+        buttonBackgroundColor: 'yellow',
+        labelWeight: 'normal'
+    };
+    if (skin === 'blue') {
+        buttonProps.buttonBackgroundColor = 'blue'
+        buttonProps.labelWeight: 'bold'
+    }
+    return <Button {...buttonProps} />
+}
+```
+Please note that this approach is meant to be used for skinning only, so, once your component gets attached by props, the global style rule gets changed and all components sharing it will update.  This approach won't allow having multiple stylesheets for the same component.  It is recommended to use a Provider parent so all components react to an specific set of skin variables.
+
 ### Using classNames helper.
 
 You can use [classNames](https://github.com/JedWatson/classnames) together with JSS same way you do it with global CSS.
