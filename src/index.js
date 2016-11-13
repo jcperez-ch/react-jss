@@ -1,4 +1,4 @@
-import React, {Component} from 'react'
+import React, {Component, PropTypes} from 'react'
 import {create as createJss} from 'jss'
 import preset from 'jss-preset-default'
 import hoistNonReactStatics from 'hoist-non-react-statics'
@@ -24,15 +24,15 @@ function wrap(jss, WrappedComponent, styles, options = {}) {
 
   if (!options.meta) options.meta = displayName
 
-  function attach(props) {
+  function attach(theme) {
     if (!sheet) {
-      sheet = jss.createStyleSheet(typeof styles === 'function' ? styles(props) : styles, options)
+      sheet = jss.createStyleSheet(typeof styles === 'function' ? styles(theme) : styles, options)
     }
     sheet.attach()
   }
 
-  function rettachIfChanged(props) {
-    const dynamicSheet = jss.createStyleSheet(typeof styles === 'function' ? styles(props) : styles, options)
+  function rettachIfChanged(theme) {
+    const dynamicSheet = jss.createStyleSheet(typeof styles === 'function' ? styles(theme) : styles, options)
     if (!shallowEqual(sheet, dynamicSheet)) {
       if (sheet !== null) {
         sheet.detach()
@@ -62,14 +62,17 @@ function wrap(jss, WrappedComponent, styles, options = {}) {
   return class Jss extends Component {
     static wrapped = WrappedComponent
     static displayName = `Jss(${displayName})`
-
-    componentWillMount() {
-      this.sheet = ref(this.props)
+    static contextTypes = {
+      theme: PropTypes.shape({})
     }
 
-    componentWillUpdate(nextProps) {
+    componentWillMount() {
+      this.sheet = ref(this.context.theme)
+    }
+
+    componentWillUpdate(nextProps, nextState, nextContext) {
       if (sheet !== null) {
-        const sheetChanged = rettachIfChanged(nextProps)
+        const sheetChanged = rettachIfChanged(nextContext.theme)
         if (sheetChanged) {
           this.sheet = sheet
         }
@@ -80,7 +83,7 @@ function wrap(jss, WrappedComponent, styles, options = {}) {
 
         if (this.sheet !== sheet) {
           this.sheet.detach()
-          this.sheet = ref(this.props)
+          this.sheet = ref(this.context.theme)
         }
       }
     }

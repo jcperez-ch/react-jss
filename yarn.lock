@@ -2577,6 +2577,10 @@ jss-props-sort@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/jss-props-sort/-/jss-props-sort-2.0.1.tgz#f112805bc4f454cf3a5d156201e4ba0d4dfa14f4"
 
+jss-theme-reactor:
+  version "0.5.3"
+  resolved "https://registry.yarnpkg.com/jss-theme-reactor/-/jss-theme-reactor-0.5.3.tgz#1cb83af3953b3a905dd929b3c2fd1bbfab05c3e4"
+
 jss-vendor-prefixer@^3.0.0:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/jss-vendor-prefixer/-/jss-vendor-prefixer-3.0.1.tgz#fd96360617ffc0d23d6e336eefe11c8c81e54c47"

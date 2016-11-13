@@ -99,19 +99,72 @@ export default class Button extends Component {
 }
 ```
 
-### Using composition for skinning
+### Using composition for theming
 
-As well as injecting styles directly, `react-jss` allows you to inject dynamic style sheets based on your component's props.  So you can generate and attach a new generated sheet every time the parent component passes different props.
+As well as injecting styles directly, `react-jss` allows you to inject dynamic style sheets based on a `ThemeProvider`.
+This provider will pass the theme object via context.
+The provider can fetch the theme objects from many different sources: using props, a redux store or its own state.
+
+Below I provided an example of how a ThemeProvider would look like, using a `theme identifier` via props and storing the themes object in its own state. **Please note** that this example is not part of `react-jss`.
 
 ```javascript
+// ThemeProvider
+class ThemeProvider extends React.Component {
+  static propTypes = { theme: PropTypes.oneOf([
+    'theme1', 'theme2', 'default'
+  ]) }
+  static defaultProps = { theme: 'default' }
+  static childContextTypes = {theme: PropTypes.shape({})}
+  constructor(props, context) {
+    super(props, context)
+    this.state = {
+      themes: {
+        default: {
+          buttonBackgroundColor: 'red',
+          labelWeight: 'bold'
+        },
+        theme1: {
+          buttonBackgroundColor: 'white',
+          labelWeight: 'normal'
+        },
+        theme2: {
+          buttonBackgroundColor: 'black',
+          labelWeight: 'bold'
+        }
+      }
+    }
+  }
+  getChildContext() {
+    return {
+      theme: this.state.themes[this.props.theme]
+    }
+  }
+  render() {
+    return <div>{children}</div>
+  }
+}
+```
+
+So if your application renders something like:
+
+```html
+<ThemeProvider theme="theme1">
+  <form>
+    <Button>Save</Button>
+  </form>
+</ThemeProvider>
+```
+
+It would use the `theme1` theme object that define all the style variables of your app.
+The `theme` prop can be manipulated by the app the way you prefer, but it needs to define a `theme` child context for all themed components in order to work.
+
+```javascript
+// Component
 import React, {Component} from 'react'
 import injectSheet from 'react-jss'
 
-@injectSheet(parentProps => {
-  const {
-    buttonBackgroundColor = 'yellow',
-    labelWeight = 'normal'
-  } = parentProps;
+@injectSheet(theme => {
+  const { buttonBackgroundColor, labelWeight } = theme;
 
   return {
     button: {
@@ -135,24 +188,8 @@ export default class Button extends Component {
   }
 }
 ```
-
-This component now reacts to its ownProps, passed by a parent component like:
-
-```javascript
-// Parent component
-export default (skin) => {
-    const buttonProps = {
-        buttonBackgroundColor: 'yellow',
-        labelWeight: 'normal'
-    };
-    if (skin === 'blue') {
-        buttonProps.buttonBackgroundColor = 'blue'
-        buttonProps.labelWeight: 'bold'
-    }
-    return <Button {...buttonProps} />
-}
-```
-Please note that this approach is meant to be used for skinning only, so, once your component gets attached by props, the global style rule gets changed and all components sharing it will update.  This approach won't allow having multiple stylesheets for the same component.  It is recommended to use a Provider parent so all components react to an specific set of skin variables.
+Also, you can define as many theme providers as you can each one defining its own rules. so your components become more reusable by dictating the rules used to style them.
+Please note that this approach is meant to be used for theming only.
 
 ### Using classNames helper.
 
